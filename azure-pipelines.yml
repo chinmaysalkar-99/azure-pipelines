@@ -11,7 +11,8 @@ variables:
    - name: process.clean
      value: false
 
-pool: Azure pipelines
+pool: Springboot-application
+
 
 stages:
 - stage: Build
