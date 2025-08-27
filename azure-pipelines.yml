@@ -20,7 +20,7 @@ stages:
             clean: true
  
           # Step 2: Build Maven Project
-          - task: Maven@3
+          - task: Maven@4
             displayName: 'Maven Package'
             inputs:
               mavenPomFile: 'pom.xml'
