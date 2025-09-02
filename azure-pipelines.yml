@@ -29,8 +29,7 @@ stages:
             displayName: 'Copy Files to artifact staging directory'
             inputs:
               SourceFolder: '$(System.DefaultWorkingDirectory)'
-              Contents: '**/target/*.jar
-**/target/*.war'
+              Contents: '**/target/*.jar'
               TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
           - task: PublishBuildArtifacts@1
@@ -65,5 +64,5 @@ stages:
               sshEndpoint: 'MyLinuxVM'
               runOptions: 'inline'
               inline: |
-                pkill -f 'java -jar' || true
-                nohup java -jar /home/azureuser/app/*.jar > app.log 2>&1 &
+                chmod +x /home/azureuser/app/start-springboot.sh
+                /home/azureuser/app/start-springboot.sh
