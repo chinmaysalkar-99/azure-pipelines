@@ -1,13 +1,14 @@
+
 trigger:
   - main
- 
+
 variables:
   - name: process.clean
     value: false
- 
+
 pool:
   name: Springboot-application  # Self-hosted agent pool name
- 
+
 stages:
   - stage: Build
     displayName: Build stage
@@ -15,28 +16,54 @@ stages:
       - job: Build
         displayName: Build Maven Project
         steps:
-          # Step 1: Checkout the repository
           - checkout: self
             clean: true
- 
-          # Step 2: Build Maven Project
+
           - task: Maven@4
             displayName: 'Maven Package'
             inputs:
               mavenPomFile: 'pom.xml'
               goals: 'clean package'
- 
-          # Step 3: Copy files to artifact staging directory
+
           - task: CopyFiles@2
             displayName: 'Copy Files to artifact staging directory'
             inputs:
               SourceFolder: '$(System.DefaultWorkingDirectory)'
-              Contents: '**/target/*.?(war|jar)'
-              TargetFolder: $(Build.ArtifactStagingDirectory)
- 
-          # Step 4: Publish Build Artifacts
+              Contents: '**/target/*.jar
+**/target/*.war'
+              TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
           - task: PublishBuildArtifacts@1
             displayName: 'Publish Artifact'
             inputs:
-              pathToPublish: $(Build.ArtifactStagingDirectory)
-              artifactName: SampleSpringBootBuild
+              pathToPublish: '$(Build.ArtifactStagingDirectory)'
+              artifactName: 'SampleSpringBootBuild'
+
+  - stage: Deploy
+    displayName: Deploy to VM
+    dependsOn: Build
+    jobs:
+      - job: Deploy
+        displayName: Deploy Spring Boot App
+        steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'SampleSpringBootBuild'
+              downloadPath: '$(System.ArtifactsDirectory)'
+
+          - task: CopyFilesOverSSH@0
+            inputs:
+              sshEndpoint: 'MyLinuxVM'  # SSH service connection name
+              sourceFolder: '$(System.ArtifactsDirectory)/SampleSpringBootBuild'
+              contents: '**/*.jar'
+              targetFolder: '/home/azureuser/app'
+
+          - task: SSH@0
+            inputs:
+              sshEndpoint: 'MyLinuxVM'
+              runOptions: 'inline'
+              inline: |
+                pkill -f 'java -jar' || true
+                nohup java -jar /home/azureuser/app/*.jar > app.log 2>&1 &
